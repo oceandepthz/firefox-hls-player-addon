@@ -7,13 +7,18 @@
   function initHls(video) {
     if (video.dataset.hlsApplied) return;
     
-    const src = video.src || video.currentSrc;
-    if (!src) return;
+    // 実際のソースURLを取得（video.src または video.currentSrc または 子要素の source）
+    let src = video.src || video.currentSrc;
+    if (!src || src.startsWith('blob:')) {
+      const sourceTag = video.querySelector('source');
+      if (sourceTag && sourceTag.src) {
+        src = sourceTag.src;
+      }
+    }
+    
+    if (!src || src.startsWith('blob:')) return;
 
     // HLS形式であるかの判定
-    // 1. 拡張子が .m3u8
-    // 2. URLに m3u8 が含まれている（エンコードされている場合も考慮）
-    // 3. ユーザーの例にある Nitter のエンコードパターン
     const isHls = src.toLowerCase().includes('.m3u8') || 
                   src.includes('m3u8') || 
                   (src.includes('/video/enc/') && src.length > 100);
@@ -21,8 +26,10 @@
     if (isHls) {
       console.log('HLS Player: HLS detected, applying hls.js to:', src);
       
-      // ブラウザがMP4として再生しようとするのを止める
+      // ブラウザがHLSを解釈できずに投げるエラーを回避するため、要素をリセットする
       video.pause();
+      video.removeAttribute('src'); // src属性を削除
+      video.load(); // 進行中の読み込みを強制停止
       video.removeAttribute('type');
       
       const hls = new Hls({
@@ -65,18 +72,22 @@
   // 動的に追加されるvideoタグを監視
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
-      mutation.addedNodes.forEach((node) => {
-        if (node.nodeName === 'VIDEO') {
-          initHls(node);
-        } else if (node.querySelectorAll) {
-          const videos = node.querySelectorAll('video');
-          videos.forEach(initHls);
+      if (mutation.type === 'childList') {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeName === 'VIDEO') {
+            initHls(node);
+          } else if (node.querySelectorAll) {
+            const videos = node.querySelectorAll('video');
+            videos.forEach(initHls);
+          }
+        });
+      } else if (mutation.type === 'attributes' && mutation.attributeName === 'src') {
+        const target = mutation.target;
+        if (target.nodeName === 'VIDEO') {
+          initHls(target);
+        } else if (target.nodeName === 'SOURCE' && target.parentElement?.nodeName === 'VIDEO') {
+          initHls(target.parentElement);
         }
-      });
-      
-      // src属性が変更された場合も再チェック
-      if (mutation.type === 'attributes' && mutation.attributeName === 'src' && mutation.target.nodeName === 'VIDEO') {
-        initHls(mutation.target);
       }
     });
   });
