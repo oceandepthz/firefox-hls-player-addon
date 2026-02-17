@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "HLS Player for Firefox",
+  "version": "1.0",
+  "description": "Firefox上でHLS (.m3u8) ビデオを再生可能にします。",
+  "permissions": [
+    "storage"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["hls.min.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
