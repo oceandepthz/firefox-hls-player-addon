@@ -1,37 +1,35 @@
 # HLS Player for Firefox
 
-Firefox上でHLS (.m3u8) ビデオを直接再生可能にするWebExtensionです。
+Firefox ブラウザ上で HLS (.m3u8) 形式のビデオを直接再生可能にするための拡張機能です。
 
 ## 概要
 
-通常、FirefoxではHLS形式の動画を再生するために外部プレイヤーが必要ですが、このアドオンをインストールすることで、ブラウザ上で直接再生できるようになります。
+Firefox は標準では HLS (.m3u8) 形式のネイティブ再生をサポートしていませんが、このアドオンは [hls.js](https://github.com/video-dev/hls.js/) ライブラリを使用して、ブラウザ標準の `<video>` タグで HLS コンテンツを再生できるようにします。
 
-## インストール方法 (開発者モード)
+## インストール方法 (一時的な読み込み)
 
-1. `git clone` または ZIPでこのリポジトリをダウンロードします。
-2. Firefoxを開き、アドレスバーに `about:debugging` と入力します。
-3. 「このFirefox」を選択します。
-4. 「一時的なアドオンを読み込む...」ボタンをクリックします。
-5. 本ディレクトリ内の `manifest.json` を選択します。
+現在は開発者向けの配布形式となっています。以下の手順で Firefox に読み込むことができます。
 
-## 特徴
+1. このリポジトリをダウンロードまたはクローンします。
+2. Firefox のアドレスバーに `about:debugging#/runtime/this-firefox` を入力します。
+3. 「一時的なアドオンを読み込む (Load Temporary Add-on...)」ボタンをクリックします。
+4. プロジェクトディレクトリ内の `manifest.json` を選択してロードします。
 
-- **幅広いサイトに対応**: 標準的な `.m3u8` ファイルだけでなく、Nitterなどの特殊なエンコード済みURLにも対応しています。
-- **動的な読み込みに対応**: `MutationObserver` を使用し、ページ遷移なしで追加された動画要素も自動的に検出します。
-- **Firefox最適化**: FirefoxがHLSを解釈できずに発生する `DOMException` を回避する初期化プロセスを実装しています。
+## 主な機能
 
-## 更新履歴
+- **自動 HLS 検知**: ページ内の `<video>` および `<source>` タグをスキャンし、`.m3u8` 拡張子や HLS の MIME タイプを自動的に判別します。
+- **動的コンテンツへの対応**: `MutationObserver` を利用し、SPA（Single Page Application）などで後から追加された動画要素にも即座に対応します。
+- **Firefox への最適化**: Firefox が非サポート形式に対して出すエラーを回避し、`hls.js` によるスムーズな再生への切り替えを行います。
 
-- **v1.1**: 
-    - MIMEタイプ `application/vnd.apple.mpegurl` による HLS 判定に対応。
-    - `<source>` タグを使用しているビデオ要素への対応を強化。
-    - 動的に追加される `<source>` タグや `type` 属性の変更検知に対応。
-    - ブラウザによるメディア取得中断エラー (`DOMException`) の解消。
+## 技術仕様
 
-## 使用しているライブラリ
-
-- [hls.js](https://github.com/video-dev/hls.js/) - Apache License 2.0
+- **フレームワーク**: WebExtension Manifest V3
+- **再生エンジン**: [hls.js](https://github.com/video-dev/hls.js/)
+- **対応判定**:
+  - URL に `.m3u8` を含む場合
+  - `type` 属性が `application/vnd.apple.mpegurl` または `application/x-mpegurl` の場合
 
 ## ライセンス
 
-MIT License
+- このプロジェクト自体は MIT License です。
+- 使用しているライブラリ [hls.js](https://github.com/video-dev/hls.js/) は Apache License 2.0 で提供されています。
