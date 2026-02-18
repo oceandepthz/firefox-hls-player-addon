@@ -6,31 +6,55 @@
 
   function initHls(video) {
     if (video.dataset.hlsApplied) return;
-    
-    // 実際のソースURLを取得（video.src または video.currentSrc または 子要素の source）
+
     let src = video.src || video.currentSrc;
-    if (!src || src.startsWith('blob:')) {
-      const sourceTag = video.querySelector('source');
-      if (sourceTag && sourceTag.src) {
-        src = sourceTag.src;
+    let type = video.getAttribute('type');
+    let isHls = false;
+
+    // 子要素の source タグをチェック
+    const sourceTags = video.querySelectorAll('source');
+    for (const sourceTag of sourceTags) {
+      const sSrc = sourceTag.src;
+      const sType = sourceTag.getAttribute('type');
+      
+      if (checkHls(sSrc, sType)) {
+        src = sSrc;
+        isHls = true;
+        break;
       }
     }
-    
-    if (!src || src.startsWith('blob:')) return;
 
-    // HLS形式であるかの判定
-    const isHls = src.toLowerCase().includes('.m3u8') || 
-                  src.includes('m3u8') || 
-                  (src.includes('/video/enc/') && src.length > 100);
+    // videoタグ自体の属性をチェック（まだ判定できていない場合）
+    if (!isHls && checkHls(src, type)) {
+      isHls = true;
+    }
 
-    if (isHls) {
+    function checkHls(url, mimeType) {
+      if (!url) return false;
+      if (url.startsWith('blob:')) return false;
+      
+      return url.toLowerCase().includes('.m3u8') || 
+             url.includes('m3u8') || 
+             (url.includes('/video/enc/') && url.length > 100) ||
+             mimeType === 'application/vnd.apple.mpegurl';
+    }
+
+    if (isHls && src) {
       console.log('HLS Player: HLS detected, applying hls.js to:', src);
       
       // ブラウザがHLSを解釈できずに投げるエラーを回避するため、要素をリセットする
       video.pause();
       video.removeAttribute('src'); // src属性を削除
+      video.removeAttribute('type'); // type属性を削除
+      
+      // 子要素の source タグも無効化する
+      const sources = video.querySelectorAll('source');
+      sources.forEach(s => {
+        s.removeAttribute('src');
+        s.removeAttribute('type');
+      });
+
       video.load(); // 進行中の読み込みを強制停止
-      video.removeAttribute('type');
       
       const hls = new Hls({
         debug: false
@@ -76,12 +100,14 @@
         mutation.addedNodes.forEach((node) => {
           if (node.nodeName === 'VIDEO') {
             initHls(node);
+          } else if (node.nodeName === 'SOURCE' && node.parentElement?.nodeName === 'VIDEO') {
+            initHls(node.parentElement);
           } else if (node.querySelectorAll) {
             const videos = node.querySelectorAll('video');
             videos.forEach(initHls);
           }
         });
-      } else if (mutation.type === 'attributes' && mutation.attributeName === 'src') {
+      } else if (mutation.type === 'attributes') {
         const target = mutation.target;
         if (target.nodeName === 'VIDEO') {
           initHls(target);
@@ -96,7 +122,7 @@
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ['src']
+    attributeFilter: ['src', 'type']
   });
 
 })();

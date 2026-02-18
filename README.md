@@ -23,9 +23,10 @@ Firefox上でHLS (.m3u8) ビデオを直接再生可能にするWebExtensionで�
 ## 更新履歴
 
 - **v1.1**: 
+    - MIMEタイプ `application/vnd.apple.mpegurl` による HLS 判定に対応。
+    - `<source>` タグを使用しているビデオ要素への対応を強化。
+    - 動的に追加される `<source>` タグや `type` 属性の変更検知に対応。
     - ブラウザによるメディア取得中断エラー (`DOMException`) の解消。
-    - `<source>` タグを使用しているビデオ要素への対応。
-    - ソースURLが動的に変更された際の検知ロジックを改善。
 
 ## 使用しているライブラリ
 
